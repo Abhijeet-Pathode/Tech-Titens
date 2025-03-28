@@ -1,0 +1,692 @@
+import { useState, useEffect } from 'react'
+import { Button } from "/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "/components/ui/card"
+import { Input } from "/components/ui/input"
+import { Label } from "/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "/components/ui/checkbox"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "/components/ui/avatar"
+
+type UserProfile = {
+  age: number
+  weight: number
+  height: number
+  dailyCalorieTarget: number
+  fitnessGoal: string
+  dietaryPreferences: string[]
+  healthConditions: string[]
+}
+
+type Meal = {
+  name: string
+  calories: number
+  protein: number
+  carbs: number
+  fats: number
+}
+
+type GroceryItem = {
+  name: string
+  purchased: boolean
+}
+
+type Recipe = {
+  name: string
+  calories: number
+  protein: number
+  carbs: number
+  fats: number
+  ingredients: string[]
+  instructions: string
+}
+
+type Message = {
+  sender: 'user' | 'bot'
+  text: string
+}
+
+const initialMessages: Message[] = [
+  {
+    sender: 'bot',
+    text: 'Hello! Welcome to the Nutrition Planner Chatbot. How can I assist you today?',
+  },
+]
+
+const recipes: Recipe[] = [
+  {
+    name: 'Grilled Chicken Salad',
+    calories: 350,
+    protein: 30,
+    carbs: 20,
+    fats: 15,
+    ingredients: ['4 oz grilled chicken breast', '2 cups mixed greens', '1/2 cup cherry tomatoes', '1/2 cup cucumber slices', '1/4 cup crumbled feta cheese', '1/4 cup sliced almonds'],
+    instructions: 'Grill chicken breast. Mix with greens, tomatoes, cucumber, feta, and almonds. Dress with olive oil and lemon juice.',
+  },
+  {
+    name: 'Baked Salmon with Quinoa and Broccoli',
+    calories: 400,
+    protein: 35,
+    carbs: 30,
+    fats: 20,
+    ingredients: ['4 oz baked salmon', '1 cup cooked quinoa', '1 cup steamed broccoli', '1 tablespoon olive oil'],
+    instructions: 'Bake salmon. Cook quinoa and steam broccoli. Serve salmon with quinoa and broccoli, drizzled with olive oil.',
+  },
+  {
+    name: 'Turkey and Avocado Wrap',
+    calories: 300,
+    protein: 25,
+    carbs: 35,
+    fats: 10,
+    ingredients: ['2 slices whole wheat tortilla', '4 oz sliced turkey breast', '1/2 avocado', '1 tomato', '1 lettuce leaf'],
+    instructions: 'Spread avocado on tortilla. Add turkey, tomato, and lettuce. Roll up and serve.',
+  },
+  {
+    name: 'Lentil Soup with Whole Grain Bread',
+    calories: 320,
+    protein: 15,
+    carbs: 40,
+    fats: 5,
+    ingredients: ['1 cup lentils', '2 cups vegetable broth', '1 onion', '2 carrots', '1 celery stalk', '1 cup diced tomatoes', '1 cup whole grain bread'],
+    instructions: 'Cook lentils and vegetables in broth. Serve with whole grain bread.',
+  },
+  {
+    name: 'Scrambled Eggs with Whole Wheat Toast and Avocado',
+    calories: 350,
+    protein: 20,
+    carbs: 30,
+    fats: 15,
+    ingredients: ['2 eggs', '1/2 avocado', '2 slices whole wheat toast'],
+    instructions: 'Scramble eggs with avocado. Serve with whole wheat toast.',
+  },
+]
+
+const generateAIARecipe = (profile: UserProfile): Recipe => {
+  const { fitnessGoal, dietaryPreferences } = profile
+
+  let recipeName = ''
+  let ingredients: string[] = []
+  let instructions = ''
+  let calories = 0
+  let protein = 0
+  let carbs = 0
+  let fats = 0
+
+  if (fitnessGoal === 'weight-loss') {
+    if (dietaryPreferences.includes('vegetarian')) {
+      recipeName = 'Vegetarian Quinoa Salad'
+      ingredients = ['1 cup cooked quinoa', '1 cup mixed greens', '1/2 cup cherry tomatoes', '1/2 cup cucumber slices', '1/4 cup crumbled feta cheese', '1/4 cup sliced almonds']
+      instructions = 'Mix quinoa with greens, tomatoes, cucumber, feta, and almonds. Dress with olive oil and lemon juice.'
+      calories = 300
+      protein = 15
+      carbs = 35
+      fats = 10
+    } else {
+      recipeName = 'Grilled Chicken Salad'
+      ingredients = ['4 oz grilled chicken breast', '2 cups mixed greens', '1/2 cup cherry tomatoes', '1/2 cup cucumber slices', '1/4 cup crumbled feta cheese', '1/4 cup sliced almonds']
+      instructions = 'Grill chicken breast. Mix with greens, tomatoes, cucumber, feta, and almonds. Dress with olive oil and lemon juice.'
+      calories = 350
+      protein = 30
+      carbs = 20
+      fats = 15
+    }
+  } else if (fitnessGoal === 'weight-gain') {
+    if (dietaryPreferences.includes('vegetarian')) {
+      recipeName = 'Vegetarian Lentil Stew'
+      ingredients = ['1 cup lentils', '2 cups vegetable broth', '1 onion', '2 carrots', '1 celery stalk', '1 cup diced tomatoes', '1 cup whole grain bread']
+      instructions = 'Cook lentils and vegetables in broth. Serve with whole grain bread.'
+      calories = 400
+      protein = 15
+      carbs = 40
+      fats = 5
+    } else {
+      recipeName = 'Baked Salmon with Quinoa and Broccoli'
+      ingredients = ['4 oz baked salmon', '1 cup cooked quinoa', '1 cup steamed broccoli', '1 tablespoon olive oil']
+      instructions = 'Bake salmon. Cook quinoa and steam broccoli. Serve salmon with quinoa and broccoli, drizzled with olive oil.'
+      calories = 400
+      protein = 35
+      carbs = 30
+      fats = 20
+    }
+  } else if (fitnessGoal === 'maintenance') {
+    if (dietaryPreferences.includes('vegetarian')) {
+      recipeName = 'Vegetarian Turkey and Avocado Wrap'
+      ingredients = ['2 slices whole wheat tortilla', '4 oz sliced turkey breast', '1/2 avocado', '1 tomato', '1 lettuce leaf']
+      instructions = 'Spread avocado on tortilla. Add turkey, tomato, and lettuce. Roll up and serve.'
+      calories = 300
+      protein = 25
+      carbs = 35
+      fats = 10
+    } else {
+      recipeName = 'Scrambled Eggs with Whole Wheat Toast and Avocado'
+      ingredients = ['2 eggs', '1/2 avocado', '2 slices whole wheat toast']
+      instructions = 'Scramble eggs with avocado. Serve with whole wheat toast.'
+      calories = 350
+      protein = 20
+      carbs = 30
+      fats = 15
+    }
+  }
+
+  return {
+    name: recipeName,
+    calories,
+    protein,
+    carbs,
+    fats,
+    ingredients,
+    instructions,
+  }
+}
+
+const generatePlan = (profile: UserProfile): string => {
+  const { fitnessGoal, dietaryPreferences } = profile
+
+  let plan = ''
+
+  if (fitnessGoal === 'weight-loss') {
+    plan += '### Weight Loss Plan\n'
+    plan += '#### Goals:\n'
+    plan += '- Reduce daily calorie intake to ' + profile.dailyCalorieTarget + ' calories.\n'
+    plan += '- Increase protein intake to support muscle maintenance.\n'
+    plan += '- Focus on high-fiber foods to promote satiety.\n'
+    plan += '\n#### Sample Meal Plan:\n'
+    plan += '- *Breakfast:* Grilled Chicken Salad\n'
+    plan += '- *Lunch:* Baked Salmon with Quinoa and Broccoli\n'
+    plan += '- *Dinner:* Turkey and Avocado Wrap\n'
+  } else if (fitnessGoal === 'weight-gain') {
+    plan += '### Weight Gain Plan\n'
+    plan += '#### Goals:\n'
+    plan += '- Increase daily calorie intake to ' + profile.dailyCalorieTarget + ' calories.\n'
+    plan += '- Focus on protein-rich foods to build muscle.\n'
+    plan += '- Include healthy fats to support weight gain.\n'
+    plan += '\n#### Sample Meal Plan:\n'
+    plan += '- *Breakfast:* Scrambled Eggs with Whole Wheat Toast and Avocado\n'
+    plan += '- *Lunch:* Baked Salmon with Quinoa and Broccoli\n'
+    plan += '- *Dinner:* Lentil Soup with Whole Grain Bread\n'
+  } else if (fitnessGoal === 'maintenance') {
+    plan += '### Maintenance Plan\n'
+    plan += '#### Goals:\n'
+    plan += '- Maintain daily calorie intake at ' + profile.dailyCalorieTarget + ' calories.\n'
+    plan += '- Balance macronutrients for overall health.\n'
+    plan += '- Include a variety of foods to ensure adequate nutrition.\n'
+    plan += '\n#### Sample Meal Plan:\n'
+    plan += '- *Breakfast:* Scrambled Eggs with Whole Wheat Toast and Avocado\n'
+    plan += '- *Lunch:* Grilled Chicken Salad\n'
+    plan += '- *Dinner:* Lentil Soup with Whole Grain Bread\n'
+  }
+
+  if (dietaryPreferences.includes('vegetarian')) {
+    plan += '\n#### Dietary Preference: Vegetarian\n'
+    plan += '- Focus on plant-based protein sources.\n'
+    plan += '- Include a variety of vegetables and whole grains.\n'
+  } else if (dietaryPreferences.includes('vegan')) {
+    plan += '\n#### Dietary Preference: Vegan\n'
+    plan += '- Exclude all animal products.\n'
+    plan += '- Focus on plant-based protein sources.\n'
+  } else if (dietaryPreferences.includes('gluten-free')) {
+    plan += '\n#### Dietary Preference: Gluten-Free\n'
+    plan += '- Avoid gluten-containing grains like wheat, barley, and rye.\n'
+    plan += '- Include gluten-free alternatives like quinoa and rice.\n'
+  }
+
+  return plan
+}
+
+export default function NutritionPlanner() {
+  const [profile, setProfile] = useState<UserProfile>({
+    age: 0,
+    weight: 0,
+    height: 0,
+    dailyCalorieTarget: 0,
+    fitnessGoal: '',
+    dietaryPreferences: [],
+    healthConditions: [],
+  })
+
+  const [mealPlan, setMealPlan] = useState<Meal[]>([])
+  const [groceryList, setGroceryList] = useState<GroceryItem[]>([])
+  const [activeTab, setActiveTab] = useState('profile')
+  const [messages, setMessages] = useState<Message[]>(initialMessages)
+  const [input, setInput] = useState('')
+  const [aiRecipe, setAIRecipe] = useState<Recipe | null>(null)
+
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('userProfile')
+    if (savedProfile) {
+      setProfile(JSON.parse(savedProfile))
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('userProfile', JSON.stringify(profile))
+  }, [profile])
+
+  const saveProfile = () => {
+    localStorage.setItem('userProfile', JSON.stringify(profile))
+  }
+
+  const resetProfile = () => {
+    if (window.confirm('Are you sure you want to reset your profile?')) {
+      setProfile({
+        age: 0,
+        weight: 0,
+        height: 0,
+        dailyCalorieTarget: 0,
+        fitnessGoal: '',
+        dietaryPreferences: [],
+        healthConditions: [],
+      })
+      localStorage.removeItem('userProfile')
+    }
+  }
+
+  const generateMealPlan = () => {
+    // Dummy AI meal plan generation logic
+    const newMealPlan: Meal[] = [
+      { name: 'Breakfast', calories: 300, protein: 20, carbs: 40, fats: 10 },
+      { name: 'Lunch', calories: 500, protein: 30, carbs: 60, fats: 15 },
+      { name: 'Dinner', calories: 400, protein: 25, carbs: 50, fats: 12 },
+    ]
+    setMealPlan(newMealPlan)
+  }
+
+  const addCustomMeal = (meal: Meal) => {
+    setMealPlan([...mealPlan, meal])
+  }
+
+  const removeMeal = (index: number) => {
+    const newMealPlan = mealPlan.filter((_, i) => i !== index)
+    setMealPlan(newMealPlan)
+  }
+
+  const generateGroceryList = () => {
+    // Dummy grocery list generation logic
+    const newGroceryList: GroceryItem[] = [
+      { name: 'Eggs', purchased: false },
+      { name: 'Bread', purchased: false },
+      { name: 'Chicken', purchased: false },
+    ]
+    setGroceryList(newGroceryList)
+  }
+
+  const addCustomGroceryItem = (item: GroceryItem) => {
+    setGroceryList([...groceryList, item])
+  }
+
+  const togglePurchased = (index: number) => {
+    const newGroceryList = groceryList.map((item, i) =>
+      i === index ? { ...item, purchased: !item.purchased } : item
+    )
+    setGroceryList(newGroceryList)
+  }
+
+  const removeGroceryItem = (index: number) => {
+    const newGroceryList = groceryList.filter((_, i) => i !== index)
+    setGroceryList(newGroceryList)
+  }
+
+  const totalNutrition = mealPlan.reduce(
+    (acc, meal) => ({
+      calories: acc.calories + meal.calories,
+      protein: acc.protein + meal.protein,
+      carbs: acc.carbs + meal.carbs,
+      fats: acc.fats + meal.fats,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fats: 0 }
+  )
+
+  const sendMessage = () => {
+    if (input.trim()) {
+      const userMessage: Message = { sender: 'user', text: input }
+      setMessages([...messages, userMessage])
+
+      const lowerCaseInput = input.toLowerCase()
+      let botResponse = ''
+
+      if (lowerCaseInput.includes('give a plan') || lowerCaseInput.includes('provide a plan')) {
+        botResponse = generatePlan(profile)
+      } else if (lowerCaseInput.includes('provide a recipe')) {
+        const newAIRecipe = generateAIARecipe(profile)
+        botResponse = ### Recipe: ${newAIRecipe.name}\n\n**Calories:** ${newAIRecipe.calories}\n**Protein:** ${newAIRecipe.protein}g\n**Carbs:** ${newAIRecipe.carbs}g\n**Fats:** ${newAIRecipe.fats}g\n\n**Ingredients:**\n- ${newAIRecipe.ingredients.join('\n- ')}\n\n**Instructions:**\n${newAIRecipe.instructions}
+      } else {
+        botResponse = 'I’m sorry, I didn0t understand your question. Can you please rephrase it?'
+      }
+
+      const botMessage: Message = { sender: 'bot', text: botResponse }
+      setMessages([...messages, userMessage, botMessage])
+      setInput('')
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      sendMessage()
+    }
+  }
+
+  const generateAIRecipe = () => {
+    const newAIRecipe = generateAIARecipe(profile)
+    setAIRecipe(newAIRecipe)
+  }
+
+  const addAIRecipeToMealPlan = () => {
+    if (aiRecipe) {
+      const newMeal: Meal = {
+        name: aiRecipe.name,
+        calories: aiRecipe.calories,
+        protein: aiRecipe.protein,
+        carbs: aiRecipe.carbs,
+        fats: aiRecipe.fats,
+      }
+      setMealPlan([...mealPlan, newMeal])
+      setAIRecipe(null)
+    }
+  }
+
+  return (
+    <div className="p-4">
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="meal-plan">Meal Plan</TabsTrigger>
+          <TabsTrigger value="grocery-list">Grocery List</TabsTrigger>
+          <TabsTrigger value="chatbot">Chatbot</TabsTrigger>
+        </TabsList>
+        <TabsContent value="profile">
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Nutrition Profile</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="age">Age</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    value={profile.age}
+                    onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    value={profile.weight}
+                    onChange={(e) => setProfile({ ...profile, weight: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="height">Height (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={profile.height}
+                    onChange={(e) => setProfile({ ...profile, height: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="calories">Daily Calorie Target</Label>
+                  <Input
+                    id="calories"
+                    type="number"
+                    value={profile.dailyCalorieTarget}
+                    onChange={(e) => setProfile({ ...profile, dailyCalorieTarget: parseInt(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Fitness Goal</Label>
+                <RadioGroup
+                  defaultValue={profile.fitnessGoal}
+                  onValueChange={(value) => setProfile({ ...profile, fitnessGoal: value })}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="weight-loss" id="weight-loss" />
+                    <Label htmlFor="weight-loss">Weight Loss</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="weight-gain" id="weight-gain" />
+                    <Label htmlFor="weight-gain">Weight Gain</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="maintenance" id="maintenance" />
+                    <Label htmlFor="maintenance">Maintenance</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              <div>
+                <Label>Dietary Preferences</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Checkbox
+                    id="vegetarian"
+                    checked={profile.dietaryPreferences.includes('vegetarian')}
+                    onCheckedChange={(checked) =>
+                      setProfile({
+                        ...profile,
+                        dietaryPreferences: checked
+                          ? [...profile.dietaryPreferences, 'vegetarian']
+                          : profile.dietaryPreferences.filter((pref) => pref !== 'vegetarian'),
+                      })
+                    }
+                  />
+                  <Label htmlFor="vegetarian">Vegetarian</Label>
+                  <Checkbox
+                    id="vegan"
+                    checked={profile.dietaryPreferences.includes('vegan')}
+                    onCheckedChange={(checked) =>
+                      setProfile({
+                        ...profile,
+                        dietaryPreferences: checked
+                          ? [...profile.dietaryPreferences, 'vegan']
+                          : profile.dietaryPreferences.filter((pref) => pref !== 'vegan'),
+                      })
+                    }
+                  />
+                  <Label htmlFor="vegan">Vegan</Label>
+                  <Checkbox
+                    id="gluten-free"
+                    checked={profile.dietaryPreferences.includes('gluten-free')}
+                    onCheckedChange={(checked) =>
+                      setProfile({
+                        ...profile,
+                        dietaryPreferences: checked
+                          ? [...profile.dietaryPreferences, 'gluten-free']
+                          : profile.dietaryPreferences.filter((pref) => pref !== 'gluten-free'),
+                      })
+                    }
+                  />
+                  <Label htmlFor="gluten-free">Gluten-Free</Label>
+                </div>
+              </div>
+              <div>
+                <Label>Health Conditions</Label>
+                <Select
+                  defaultValue={profile.healthConditions.join(',')}
+                  onValueChange={(value) =>
+                    setProfile({
+                      ...profile,
+                      healthConditions: value.split(','),
+                    })
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select health conditions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="diabetes">Diabetes</SelectItem>
+                    <SelectItem value="hypertension">Hypertension</SelectItem>
+                    <SelectItem value="allergies">Allergies</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-between">
+                <Button onClick={saveProfile}>Save Profile</Button>
+                <Button variant="destructive" onClick={resetProfile}>Reset Profile</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="meal-plan">
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Meal Plan</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={generateMealPlan}>Generate Meal Plan</Button>
+              <Button onClick={generateAIRecipe}>Generate AI Recipe</Button>
+              {aiRecipe && (
+                <Card className="mt-4">
+                  <CardHeader>
+                    <CardTitle>{aiRecipe.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p><strong>Calories:</strong> {aiRecipe.calories}</p>
+                    <p><strong>Protein:</strong> {aiRecipe.protein}g</p>
+                    <p><strong>Carbs:</strong> {aiRecipe.carbs}g</p>
+                    <p><strong>Fats:</strong> {aiRecipe.fats}g</p>
+                    <h3 className="mt-4 text-lg font-semibold">Ingredients</h3>
+                    <ul>
+                      {aiRecipe.ingredients.map((ingredient, index) => (
+                        <li key={index}>{ingredient}</li>
+                      ))}
+                    </ul>
+                    <h3 className="mt-4 text-lg font-semibold">Instructions</h3>
+                    <p>{aiRecipe.instructions}</p>
+                    <Button onClick={addAIRecipeToMealPlan}>Add to Meal Plan</Button>
+                  </CardContent>
+                </Card>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Meal</TableHead>
+                    <TableHead>Calories</TableHead>
+                    <TableHead>Protein</TableHead>
+                    <TableHead>Carbs</TableHead>
+                    <TableHead>Fats</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mealPlan.map((meal, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{meal.name}</TableCell>
+                      <TableCell>{meal.calories}</TableCell>
+                      <TableCell>{meal.protein}</TableCell>
+                      <TableCell>{meal.carbs}</TableCell>
+                      <TableCell>{meal.fats}</TableCell>
+                      <TableCell>
+                        <Button variant="destructive" onClick={() => removeMeal(index)}>Remove</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">Total Nutrition Intake</h3>
+                  <p>Calories: {totalNutrition.calories}</p>
+                  <p>Protein: {totalNutrition.protein}g</p>
+                  <p>Carbs: {totalNutrition.carbs}g</p>
+                  <p>Fats: {totalNutrition.fats}g</p>
+                </div>
+                <Button onClick={() => addCustomMeal({ name: 'Custom Meal', calories: 0, protein: 0, carbs: 0, fats: 0 })}>Add Custom Meal</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="grocery-list">
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Grocery List</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={generateGroceryList}>Generate Grocery List</Button>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Purchased</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {groceryList.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>
+                        <Checkbox
+                          id={item-${index}}
+                          checked={item.purchased}
+                          onCheckedChange={() => togglePurchased(index)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="destructive" onClick={() => removeGroceryItem(index)}>Remove</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex justify-between">
+                <Button onClick={() => addCustomGroceryItem({ name: 'Custom Item', purchased: false })}>Add Custom Item</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="chatbot">
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle>Nutrition Planner Chatbot</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="h-[400px] overflow-y-auto">
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}}
+                  >
+                    <div className="max-w-md p-2 rounded-lg mb-2">
+                      <div className="flex items-center space-x-2">
+                        {message.sender === 'bot' && (
+                          <Avatar>
+                            <AvatarImage src="https://github.com/shadcn.png" />
+                            <AvatarFallback>CN</AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className={bg-${message.sender === 'user' ? 'blue' : 'gray'}-100 p-2 rounded-lg}>
+                          <p>{message.text}</p>
+                        </div>
+                        {message.sender === 'user' && (
+                          <Avatar>
+                            <AvatarImage src="https://github.com/your-avatar.png" />
+                            <AvatarFallback>US</AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex space-x-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type a message..."
+                  className="flex-1"
+                />
+                <Button onClick={sendMessage}>Send</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

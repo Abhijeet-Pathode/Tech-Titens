@@ -1,0 +1,136 @@
+import { useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Check, X, ArrowRight } from "lucide-react";
+
+type Meal = {
+  id: string;
+  name: string;
+  time: "breakfast" | "lunch" | "dinner" | "snack";
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+};
+
+type GroceryItem = {
+  id: string;
+  name: string;
+  quantity: string;
+  purchased: boolean;
+};
+
+const NutritionPlanner = () => {
+  const [activeTab, setActiveTab] = useState<"plan" | "tracker" | "groceries">("plan");
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [groceryList, setGroceryList] = useState<GroceryItem[]>([]);
+  const [newMeal, setNewMeal] = useState<Partial<Meal>>({ time: "breakfast" });
+  const [newGroceryItem, setNewGroceryItem] = useState<Partial<GroceryItem>>({});
+
+  const addMeal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMeal.name || !newMeal.calories) return;
+    setMeals([...meals, { ...newMeal, id: Date.now().toString() } as Meal]);
+    setNewMeal({ time: "breakfast" });
+  };
+
+  const addGroceryItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroceryItem.name) return;
+    setGroceryList([...groceryList, { ...newGroceryItem, id: Date.now().toString(), purchased: false } as GroceryItem]);
+    setNewGroceryItem({});
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex space-x-4">
+        <Button onClick={() => setActiveTab("plan")}>Meal Plan</Button>
+        <Button onClick={() => setActiveTab("tracker")}>Tracker</Button>
+        <Button onClick={() => setActiveTab("groceries")}>Groceries</Button>
+      </div>
+
+      {activeTab === "plan" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Today's Meal Plan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={addMeal} className="space-y-4">
+              <Input
+                placeholder="Meal Name"
+                value={newMeal.name || ""}
+                onChange={(e) => setNewMeal({ ...newMeal, name: e.target.value })}
+              />
+              <Input
+                placeholder="Calories"
+                type="number"
+                value={newMeal.calories || ""}
+                onChange={(e) => setNewMeal({ ...newMeal, calories: Number(e.target.value) })}
+              />
+              <Button type="submit">Add Meal</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "tracker" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Nutrition Tracker</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Meal</TableHead>
+                  <TableHead>Calories</TableHead>
+                  <TableHead>Protein</TableHead>
+                  <TableHead>Carbs</TableHead>
+                  <TableHead>Fats</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {meals.map((meal) => (
+                  <TableRow key={meal.id}>
+                    <TableCell>{meal.name}</TableCell>
+                    <TableCell>{meal.calories}</TableCell>
+                    <TableCell>{meal.protein}</TableCell>
+                    <TableCell>{meal.carbs}</TableCell>
+                    <TableCell>{meal.fats}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "groceries" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Grocery List</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={addGroceryItem} className="space-y-4">
+              <Input
+                placeholder="Item Name"
+                value={newGroceryItem.name || ""}
+                onChange={(e) => setNewGroceryItem({ ...newGroceryItem, name: e.target.value })}
+              />
+              <Input
+                placeholder="Quantity"
+                value={newGroceryItem.quantity || ""}
+                onChange={(e) => setNewGroceryItem({ ...newGroceryItem, quantity: e.target.value })}
+              />
+              <Button type="submit">Add Item</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default NutritionPlanner;
